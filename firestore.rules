@@ -1,0 +1,347 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (default-deny catch-all)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Hardened Global Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(ownerId) {
+      return isVerifiedUser() && request.auth.uid == ownerId;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (request.auth.token.email.lower() == "shane.geach@gmail.com");
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Relation Checker: Is user a member of the parent project?
+    function isProjectMember(projectId) {
+      return isVerifiedUser() && (
+        (request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.members) ||
+        (request.auth.token.email.lower() in get(/databases/$(database)/documents/projects/$(projectId)).data.memberEmails)
+      );
+    }
+
+    // --- Schema Validation Functions ---
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['id', 'title', 'ownerId', 'members', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 10
+        && data.id is string && isValidId(data.id)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 100
+        && data.description is string && data.description.size() <= 1000
+        && data.ownerId is string && data.ownerId.size() <= 128
+        && data.ownerEmail is string && data.ownerEmail.size() <= 200
+        && data.members is list && data.members.size() >= 1 && data.members.size() <= 100
+        && data.memberEmails is list && data.memberEmails.size() >= 1 && data.memberEmails.size() <= 100
+        && (request.auth.uid in data.members)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTask(data, projectId) {
+      return data.keys().hasAll(['id', 'projectId', 'title', 'status', 'priority', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 12
+        && data.id is string && isValidId(data.id)
+        && data.projectId is string && data.projectId == projectId
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 100
+        && data.description is string && data.description.size() <= 1000
+        && data.status is string && (data.status in ['todo', 'in_progress', 'review', 'completed'])
+        && data.priority is string && (data.priority in ['low', 'medium', 'high'])
+        && (data.assignedTo == null || (data.assignedTo is string && isValidId(data.assignedTo)))
+        && (data.assignedEmail == null || (data.assignedEmail is string && data.assignedEmail.size() <= 200))
+        && data.tags is list && data.tags.size() <= 10
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTimeBlock(data, projectId) {
+      return data.keys().hasAll(['id', 'projectId', 'title', 'startTime', 'endTime', 'userId', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 12
+        && data.id is string && isValidId(data.id)
+        && data.projectId is string && data.projectId == projectId
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 100
+        && data.description is string && data.description.size() <= 1000
+        && data.startTime is timestamp
+        && data.endTime is timestamp
+        && data.startTime < data.endTime
+        && data.userId is string && data.userId == request.auth.uid
+        && (data.taskId == null || (data.taskId is string && isValidId(data.taskId)))
+        && (data.color == null || (data.color is string && data.color.size() <= 50))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidGoal(data, projectId) {
+      return data.keys().hasAll(['id', 'projectId', 'title', 'progress', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 10
+        && data.id is string && isValidId(data.id)
+        && data.projectId is string && data.projectId == projectId
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 100
+        && data.description is string && data.description.size() <= 1000
+        && data.targetDate is timestamp
+        && data.progress is number && data.progress >= 0 && data.progress <= 100
+        && data.status is string && (data.status in ['not_started', 'in_progress', 'completed'])
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidChatMessage(data, projectId) {
+      return data.keys().hasAll(['id', 'projectId', 'senderId', 'senderEmail', 'message', 'createdAt'])
+        && data.keys().size() <= 8
+        && data.id is string && isValidId(data.id)
+        && data.projectId is string && data.projectId == projectId
+        && data.senderId is string && data.senderId == request.auth.uid
+        && data.senderEmail is string && data.senderEmail == request.auth.token.email
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 2000
+        && data.createdAt is timestamp;
+    }
+
+    function isValidActivity(data, projectId) {
+      return data.keys().hasAll(['id', 'projectId', 'actorId', 'actorEmail', 'action', 'createdAt'])
+        && data.keys().size() <= 8
+        && data.id is string && isValidId(data.id)
+        && data.projectId is string && data.projectId == projectId
+        && data.actorId is string && data.actorId == request.auth.uid
+        && data.actorEmail is string && data.actorEmail == request.auth.token.email
+        && data.action is string && data.action.size() >= 1 && data.action.size() <= 500
+        && data.createdAt is timestamp;
+    }
+
+    function isValidUserPublic(data, userId) {
+      return data.keys().hasAll(['userId', 'email', 'displayName', 'updatedAt'])
+        && data.keys().size() <= 6
+        && data.userId is string && data.userId == userId
+        && data.email is string && data.email.size() <= 200
+        && data.displayName is string && data.displayName.size() <= 100
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivate(data, userId) {
+      return data.keys().hasAll(['userId', 'email', 'preferences', 'createdAt'])
+        && data.keys().size() <= 6
+        && data.userId is string && data.userId == userId
+        && data.email is string && data.email.size() <= 200
+        && data.preferences is string && data.preferences.size() <= 5000
+        && data.createdAt is timestamp;
+    }
+
+    // --- Path matching blocks ---
+
+    // 2. User Collections
+    match /users/{userId} {
+      match /public/profile {
+        // Anyone logged in and verified can read public profile (needed for member dropdowns)
+        allow get, list: if isVerifiedUser();
+        
+        allow create: if isVerifiedUser() 
+          && request.auth.uid == userId 
+          && isValidUserPublic(incoming(), userId)
+          && incoming().updatedAt == request.time;
+          
+        allow update: if isVerifiedUser() 
+          && request.auth.uid == userId 
+          && isValidUserPublic(incoming(), userId)
+          && incoming().updatedAt == request.time
+          && incoming().email == existing().email
+          && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'updatedAt']);
+      }
+
+      match /private/info {
+        // High private details isolated strictly to the user owner or admins
+        allow get: if isOwner(userId) || isAdmin();
+        
+        allow create: if isOwner(userId) 
+          && isValidUserPrivate(incoming(), userId)
+          && incoming().createdAt == request.time;
+          
+        allow update: if isOwner(userId) 
+          && isValidUserPrivate(incoming(), userId)
+          && incoming().createdAt == existing().createdAt
+          && incoming().email == existing().email
+          && incoming().diff(existing()).affectedKeys().hasOnly(['preferences']);
+          
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // 3. Projects Collections
+    match /projects/{projectId} {
+      
+      // Let current members or admins read project details
+      allow get: if isVerifiedUser() && (
+        (request.auth.uid in existing().members) || 
+        (request.auth.token.email.lower() in existing().memberEmails) || 
+        isAdmin()
+      );
+      
+      // Let users query the list of projects they are members of
+      allow list: if isVerifiedUser() && (
+        (request.auth.uid in resource.data.members) || 
+        (request.auth.token.email.lower() in resource.data.memberEmails) || 
+        isAdmin()
+      );
+
+      // Project configuration creation
+      allow create: if isVerifiedUser() 
+        && isValidId(projectId)
+        && isValidProject(incoming())
+        && incoming().id == projectId
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      // Project configuration modifications
+      allow update: if isVerifiedUser()
+        && (isOwner(existing().ownerId) || isAdmin())
+        && isValidProject(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'members', 'memberEmails', 'updatedAt']));
+
+      // Project deletion
+      allow delete: if isVerifiedUser() && (isOwner(existing().ownerId) || isAdmin());
+
+      // --- Nested Sub-collections under project workspace (Master Gate Pattern) ---
+
+      // A. Tasks Sub-collection
+      match /tasks/{taskId} {
+        allow get: if isProjectMember(projectId) || isAdmin();
+        
+        // Query must match the project members
+        allow list: if isProjectMember(projectId) || isAdmin();
+
+        allow create: if isProjectMember(projectId)
+          && isValidId(taskId)
+          && isValidTask(incoming(), projectId)
+          && incoming().id == taskId
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+
+        allow update: if isProjectMember(projectId)
+          && isValidTask(incoming(), projectId)
+          && incoming().id == existing().id
+          && incoming().projectId == existing().projectId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (incoming().diff(existing()).affectedKeys().hasOnly([
+               'title', 'description', 'status', 'priority', 'dueDate', 
+               'assignedTo', 'assignedEmail', 'tags', 'updatedAt'
+             ]));
+
+        allow delete: if isProjectMember(projectId) || isAdmin();
+      }
+
+      // B. TimeBlocks Sub-collection
+      match /timeBlocks/{blockId} {
+        allow get: if isProjectMember(projectId) || isAdmin();
+        allow list: if isProjectMember(projectId) || isAdmin();
+
+        allow create: if isProjectMember(projectId)
+          && isValidId(blockId)
+          && isValidTimeBlock(incoming(), projectId)
+          && incoming().id == blockId
+          && incoming().userId == request.auth.uid
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+
+        allow update: if isProjectMember(projectId)
+          && isValidTimeBlock(incoming(), projectId)
+          && incoming().id == existing().id
+          && incoming().projectId == existing().projectId
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (incoming().diff(existing()).affectedKeys().hasOnly([
+               'title', 'description', 'startTime', 'endTime', 
+               'taskId', 'color', 'updatedAt'
+             ]));
+
+        allow delete: if isProjectMember(projectId) || isAdmin();
+      }
+
+      // C. Goals (Milestones) Sub-collection
+      match /goals/{goalId} {
+        allow get: if isProjectMember(projectId) || isAdmin();
+        allow list: if isProjectMember(projectId) || isAdmin();
+
+        allow create: if isProjectMember(projectId)
+          && isValidId(goalId)
+          && isValidGoal(incoming(), projectId)
+          && incoming().id == goalId
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+
+        allow update: if isProjectMember(projectId)
+          && isValidGoal(incoming(), projectId)
+          && incoming().id == existing().id
+          && incoming().projectId == existing().projectId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (incoming().diff(existing()).affectedKeys().hasOnly([
+               'title', 'description', 'targetDate', 'progress', 'status', 'updatedAt'
+             ]));
+
+        allow delete: if isProjectMember(projectId) || isAdmin();
+      }
+
+      // D. Chats (Discussions) Sub-collection
+      match /chats/{chatId} {
+        allow get: if isProjectMember(projectId) || isAdmin();
+        allow list: if isProjectMember(projectId) || isAdmin();
+
+        allow create: if isProjectMember(projectId)
+          && isValidId(chatId)
+          && isValidChatMessage(incoming(), projectId)
+          && incoming().id == chatId
+          && incoming().senderId == request.auth.uid
+          && incoming().createdAt == request.time;
+
+        // Chats are typically write-once, immutable by standard rules. 
+        allow update: if false; 
+        allow delete: if isProjectMember(projectId) || isAdmin();
+      }
+
+      // E. Log/Activities Sub-collection
+      match /activities/{activityId} {
+        allow get: if isProjectMember(projectId) || isAdmin();
+        allow list: if isProjectMember(projectId) || isAdmin();
+
+        allow create: if isProjectMember(projectId)
+          && isValidId(activityId)
+          && isValidActivity(incoming(), projectId)
+          && incoming().id == activityId
+          && incoming().actorId == request.auth.uid
+          && incoming().createdAt == request.time;
+
+        // Activity log is strictly historical (read-only and create-only, no update/delete allowed except by admin)
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+    }
+  }
+}

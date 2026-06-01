@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Space Grotesk", sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f8f7f2; /* Bento warm cream background */
+  color: #1a1a1a; /* Heavy neobrutalist charcoal text */
+}
+
+/* Neo-Brutalist Bento Grid Classes */
+.bento-card {
+  background-color: #ffffff;
+  border: 2px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 4px 4px 0px 0px #1a1a1a;
+  transition: all 0.15s ease-in-out;
+}
+
+.bento-card-indigo {
+  background-color: #f5f3ff; /* Indigo-50 key highlight */
+  border: 2px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 4px 4px 0px 0px #1a1a1a;
+  transition: all 0.15s ease-in-out;
+}
+
+.bento-card-indigo:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0px 0px #1a1a1a;
+}
+
+.bento-card-green {
+  background-color: #ecfdf5; /* Emerald-50 status highlight */
+  border: 2px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 4px 4px 0px 0px #1a1a1a;
+  transition: all 0.15s ease-in-out;
+}
+
+.bento-card-green:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0px 0px #1a1a1a;
+}
+
+.bento-card-dark {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border: 2px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 4px 4px 0px 0px #000000;
+  transition: all 0.15s ease-in-out;
+}
+
+.bento-card:hover, .bento-card-dark:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0px 0px #1a1a1a;
+}
+
+.bento-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #4b5563;
+  margin-bottom: 8px;
+}
+
+.bento-btn {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border: 2px solid #1a1a1a;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 2px 2px 0px 0px #1a1a1a;
+  transition: all 0.1s ease;
+}
+
+.bento-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px 0px #1a1a1a;
+  background-color: #2e2e2e;
+}
+
+.bento-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px 0px #1a1a1a;
+}
+
+.bento-border {
+  border: 2px solid #1a1a1a !important;
+}
+
+.bento-shadow {
+  box-shadow: 4px 4px 0px 0px #1a1a1a !important;
+}
+
+.bento-active-pulse {
+  width: 8px;
+  height: 8px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Custom scrollbar aesthetics for elegant grids */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

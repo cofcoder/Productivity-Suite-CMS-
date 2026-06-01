@@ -1,0 +1,6 @@
+{
+  "name": "Collaborative Productivity Suite",
+  "description": "A high-performance personal productivity and content management platform combining kanban task management, visual time blocking, OKR goal tracking, and real-time team collaboration with secure multi-device sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

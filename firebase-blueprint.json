@@ -1,0 +1,163 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A collaborative workspace incorporating tasks, goals, schedule blocks, and team chats.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique database key of the project" },
+        "title": { "type": "string", "description": "Name of the workspace" },
+        "description": { "type": "string", "description": "Overview of the workspace context" },
+        "ownerId": { "type": "string", "description": "UID of the user who owns this project" },
+        "ownerEmail": { "type": "string", "description": "Email address of the owner" },
+        "members": { "type": "array", "description": "List of user UIDs authorized to collaborate" },
+        "memberEmails": { "type": "array", "description": "List of emails authorized to collaborate" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Firebase server timestamp at creation" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Firebase server timestamp at last modification" }
+      },
+      "required": ["id", "title", "ownerId", "members", "createdAt", "updatedAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "An actionable item of work belonging to a workspace project.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique key of the task" },
+        "projectId": { "type": "string", "description": "Reference key of the parent project" },
+        "title": { "type": "string", "description": "Title of the work item" },
+        "description": { "type": "string", "description": "Detailed notes about the work" },
+        "status": { "type": "string", "enum": ["todo", "in_progress", "review", "completed"], "description": "The current workflow stage" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"], "description": "Item urgency scale" },
+        "dueDate": { "type": "string", "format": "date-time", "description": "Deadline for the task" },
+        "assignedTo": { "type": "string", "description": "UID of project member assigned" },
+        "assignedEmail": { "type": "string", "description": "Email of project member assigned" },
+        "tags": { "type": "array", "description": "Small set of customizable badges" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Modification timestamp" }
+      },
+      "required": ["id", "projectId", "title", "status", "priority", "createdAt", "updatedAt"]
+    },
+    "TimeBlock": {
+      "title": "TimeBlock",
+      "description": "A scheduled calendar resource unit allocated to a task or objective.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique schedule ID" },
+        "projectId": { "type": "string", "description": "Reference key to parent project" },
+        "title": { "type": "string", "description": "The activity label" },
+        "description": { "type": "string", "description": "Notes for the schedule block" },
+        "startTime": { "type": "string", "format": "date-time", "description": "Start timestamp of the block" },
+        "endTime": { "type": "string", "format": "date-time", "description": "End timestamp of the block" },
+        "taskId": { "type": "string", "description": "Optional ID of task being time-blocked" },
+        "color": { "type": "string", "description": "Visual color hex or class" },
+        "userId": { "type": "string", "description": "User UID who scheduled this block" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Modification timestamp" }
+      },
+      "required": ["id", "projectId", "title", "startTime", "endTime", "userId", "createdAt", "updatedAt"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "A target milestone or OKR tracked within the workspace.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique milestone objective ID" },
+        "projectId": { "type": "string", "description": "Reference key to parent project" },
+        "title": { "type": "string", "description": "Desired objective title" },
+        "description": { "type": "string", "description": "Key results or context of goals" },
+        "targetDate": { "type": "string", "format": "date-time", "description": "Goal target complete date" },
+        "progress": { "type": "number", "description": "Metric value from 0 to 100 representing completion" },
+        "status": { "type": "string", "enum": ["not_started", "in_progress", "completed"], "description": "Fulfillment status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Modification timestamp" }
+      },
+      "required": ["id", "projectId", "title", "progress", "status", "createdAt", "updatedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A live team discussion comment thread unit.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique key of the chat text bubble" },
+        "projectId": { "type": "string", "description": "Reference key of the project workspace" },
+        "senderId": { "type": "string", "description": "Sender user ID" },
+        "senderEmail": { "type": "string", "description": "Sender email and display name info" },
+        "message": { "type": "string", "description": "The message string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "projectId", "senderId", "senderEmail", "message", "createdAt"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "A server actions log element to reconstruct a real-time modification workspace feed.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Event key" },
+        "projectId": { "type": "string", "description": "Project context key" },
+        "actorId": { "type": "string", "description": "UID of actor initiating event" },
+        "actorEmail": { "type": "string", "description": "Email of user initiating event" },
+        "action": { "type": "string", "description": "Text describing action (e.g. created task)" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "projectId", "actorId", "actorEmail", "action", "createdAt"]
+    },
+    "UserPublic": {
+      "title": "UserPublic",
+      "description": "Public profile metadata allowing workspace members to identify each other.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Unique key matching user auth UID" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "Preferred handle" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last presence timestamp" }
+      },
+      "required": ["userId", "email", "updatedAt"]
+    },
+    "UserPrivate": {
+      "title": "UserPrivate",
+      "description": "Highly isolated personal records complying with general PII constraints.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User auth UID reference" },
+        "email": { "type": "string", "description": "Email address" },
+        "preferences": { "type": "string", "description": "Client settings blob" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Enrollment timestamp" }
+      },
+      "required": ["userId", "email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "projects/{projectId}": {
+      "schema": "Project",
+      "description": "Workspace settings and list of collaborative participants."
+    },
+    "projects/{projectId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Actionable work tasks belonging to a workspace."
+    },
+    "projects/{projectId}/timeBlocks/{blockId}": {
+      "schema": "TimeBlock",
+      "description": "Schedules and calendar sessions in a workspace."
+    },
+    "projects/{projectId}/goals/{goalId}": {
+      "schema": "Goal",
+      "description": "OKR goals and metrics in a workspace."
+    },
+    "projects/{projectId}/chats/{chatId}": {
+      "schema": "ChatMessage",
+      "description": "Team chat feed in a project workspace."
+    },
+    "projects/{projectId}/activities/{activityId}": {
+      "schema": "Activity",
+      "description": "Team activity logs in a workspace."
+    },
+    "users/{userId}/public/profile": {
+      "schema": "UserPublic",
+      "description": "Public profiles accessible by team collaborators."
+    },
+    "users/{userId}/private/info": {
+      "schema": "UserPrivate",
+      "description": "Highly private user records with strict PII access control."
+    }
+  }
+}
