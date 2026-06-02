@@ -11,6 +11,254 @@ body {
   font-family: var(--font-sans);
   background-color: #f8f7f2; /* Bento warm cream background */
   color: #1a1a1a; /* Heavy neobrutalist charcoal text */
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ==========================================
+   HIGH-CONTRAST DARK THEME OVERRIDES
+   ========================================== */
+
+/* Dark mode default canvas and document resets */
+.dark, .dark body {
+  background-color: #121212 !important;
+  color: #f9fafb !important;
+}
+
+/* Card overrides inside dark theme */
+.dark .bento-card, 
+.dark .bento-card-indigo, 
+.dark .bento-card-green, 
+.dark .bento-card-dark {
+  background-color: #1e1e1e !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  box-shadow: 4px 4px 0px 0px #ffffff !important;
+}
+
+.dark .bento-card:hover, 
+.dark .bento-card-indigo:hover, 
+.dark .bento-card-green:hover, 
+.dark .bento-card-dark:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0px 0px #ffffff !important;
+}
+
+/* Button overrides inside dark theme */
+.dark .bento-btn {
+  background-color: #ffffff !important;
+  color: #121212 !important;
+  border-color: #ffffff !important;
+  box-shadow: 2px 2px 0px 0px #ffffff !important;
+}
+
+.dark .bento-btn:hover {
+  background-color: #e5e7eb !important;
+  box-shadow: 3px 3px 0px 0px #ffffff !important;
+}
+
+.dark .bento-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px 0px #ffffff !important;
+}
+
+/* Secondary light-colored backgrounds turned deep slate */
+.dark .bg-white,
+.dark .bg-slate-50, 
+.dark .bg-neutral-50, 
+.dark .bg-gray-50, 
+.dark .bg-\[\#f8f7ff\], 
+.dark .bg-\[\#fbfbf9\], 
+.dark .bg-indigo-50, 
+.dark .bg-sky-50, 
+.dark .bg-emerald-50, 
+.dark .bg-violet-50, 
+.dark .bg-pink-50, 
+.dark .bg-amber-50, 
+.dark .bg-rose-50 {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+}
+
+/* Base body/page/canvas backgrounds turned true deep background */
+.dark .bg-\[\#f8f7f2\] {
+  background-color: #121212 !important;
+  color: #ffffff !important;
+}
+
+.dark .bg-neutral-100, 
+.dark .bg-slate-100, 
+.dark .bg-gray-100,
+.dark .bg-stone-100,
+.dark .bg-sky-100,
+.dark .bg-emerald-100,
+.dark .bg-amber-100,
+.dark .bg-orange-100,
+.dark .bg-indigo-100,
+.dark .bg-red-100,
+.dark .bg-blue-100,
+.dark .bg-yellow-100,
+.dark .bg-violet-100 {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+/* Bold light text colors inside dark mode */
+.dark .text-slate-900, 
+.dark .text-neutral-900, 
+.dark .text-black, 
+.dark .text-neutral-950, 
+.dark .text-slate-950, 
+.dark .text-gray-900 {
+  color: #ffffff !important;
+}
+
+/* Medium text colors mapped to readable grey */
+.dark .text-slate-600, 
+.dark .text-neutral-600, 
+.dark .text-slate-500, 
+.dark .text-neutral-500, 
+.dark .text-gray-600, 
+.dark .text-neutral-700, 
+.dark .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+/* Light muted details */
+.dark .text-slate-400, 
+.dark .text-neutral-400, 
+.dark .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-neutral-800, 
+.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+/* Active buttons and solid black items are inverted to white in dark mode */
+.dark .bg-black {
+  background-color: #ffffff !important;
+  color: #121212 !important;
+}
+
+.dark .text-white {
+  color: #121212 !important;
+}
+
+/* Active tab inside app selector */
+.dark .bg-black.text-white {
+  background-color: #ffffff !important;
+  color: #121212 !important;
+  border-color: #ffffff !important;
+  box-shadow: 2px 2px 0px 0px #ffffff !important;
+}
+
+/* Border color overrides */
+.dark .border-black, 
+.dark .border-neutral-900, 
+.dark .border-slate-200, 
+.dark .border-neutral-200, 
+.dark .border-gray-200, 
+.dark .border-slate-300,
+.dark .border-t-2,
+.dark .border-b-2,
+.dark .border-r-2,
+.dark .border-l-2 {
+  border-color: #ffffff !important;
+}
+
+.dark .border-dashed {
+  border-color: #4b5563 !important;
+}
+
+/* Direct UI controls & input boxes */
+.dark input, 
+.dark textarea, 
+.dark select {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.dark input::placeholder, 
+.dark textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Shadows inside dark theme */
+.dark .shadow-\[2px_2px_0px_0px_\#1a1a1a\], 
+.dark .shadow-\[3px_3px_0px_0px_\#1a1a1a\],
+.dark .shadow-\[4px_4px_0px_0px_\#1a1a1a\],
+.dark .shadow-\[5px_5px_0px_0px_\#1a1a1a\],
+.dark .shadow-\[2.5px_2.5px_0px_0px_\#000\],
+.dark .shadow-\[3px_3px_0px_0px_\#000\],
+.dark .shadow-\[4px_4px_0px_0px_\#000\],
+.dark .shadow-\[2px_2px_0px_0px_\#000\],
+.dark .shadow-\[2px_2px_0px_0px_rgba\(26\,26\,26\,1\)\] {
+  box-shadow: 2px 2px 0px 0px #ffffff !important;
+}
+
+.dark .shadow-\[4px_4px_0px_0px_\#1a1a1a\] {
+  box-shadow: 4px 4px 0px 0px #ffffff !important;
+}
+
+.dark .shadow-\[6px_6px_0px_0px_\#1a1a1a\] {
+  box-shadow: 6px 6px 0px 0px #ffffff !important;
+}
+
+.dark .bento-shadow {
+  box-shadow: 4px 4px 0px 0px #ffffff !important;
+}
+
+.dark .shadow-sm {
+  box-shadow: none !important;
+}
+
+/* Nav & header items override details */
+.dark header#nav_header {
+  background-color: #1e1e1e !important;
+  border-color: #ffffff !important;
+}
+
+.dark #workspace_selector_btn {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+  box-shadow: 2px 2px 0px 0px #ffffff !important;
+}
+
+.dark #workspace_dropdown {
+  background-color: #1e1e1e !important;
+  border-color: #ffffff !important;
+  box-shadow: 4px 4px 0px 0px #ffffff !important;
+}
+
+.dark #workspace_dropdown button {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+}
+
+.dark #workspace_dropdown button.bg-black {
+  background-color: #ffffff !important;
+  color: #121212 !important;
+}
+
+.dark #sign_out_btn {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.dark #sign_out_btn:hover {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* Hover effects */
+.dark .hover\:bg-neutral-50:hover,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-[#fcfbf9]:hover {
+  background-color: #2d2d2d !important;
 }
 
 /* Neo-Brutalist Bento Grid Classes */
@@ -130,4 +378,10 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Dark theme gradient resets in Chat Discussion */
+.dark .bg-gradient-to-b.from-white {
+  background-image: none !important;
+  background-color: #121212 !important;
 }

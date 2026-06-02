@@ -35,7 +35,8 @@ import {
   subscribeChats,
   subscribeActivities,
   loginWithGoogle,
-  isFirebaseConfigured
+  isFirebaseConfigured,
+  updateTask
 } from './dataService';
 
 import Navbar from './components/Navbar';
@@ -51,6 +52,16 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authChecking, setAuthChecking] = useState(true);
   
+  // Theme state ('light' | 'dark')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('cms_theme');
+    return (saved === 'dark' || saved === 'light') ? saved : 'light';
+  });
+
+  // Task deadlining reminders setup
+  const [dismissedDeadlines, setDismissedDeadlines] = useState<string[]>([]);
+  const [showDeadlineToast, setShowDeadlineToast] = useState(true);
+
   // Projects state
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -65,6 +76,80 @@ export default function App() {
   // Navigation tab
   const [activeTab, setActiveTab] = useState('dashboard');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Global theme switcher hook 
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      localStorage.setItem('cms_theme', next);
+      return next;
+    });
+  };
+
+  // Compute tasks nearing deadline
+  const nearingDeadlines = React.useMemo(() => {
+    if (!tasks || tasks.length === 0) return [];
+    const now = new Date();
+    return tasks.filter(t => {
+      if (t.status === 'completed' || !t.dueDate) return false;
+      try {
+        const due = new Date(t.dueDate);
+        const diffHours = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
+        // Alert on overdue and anything due in the next 48 hours
+        return diffHours <= 48;
+      } catch (e) {
+        return false;
+      }
+    }).map(t => {
+      const due = new Date(t.dueDate!);
+      const diffHours = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
+      let label = '';
+      if (diffHours < 0) {
+        const hoursAgo = Math.round(Math.abs(diffHours));
+        if (hoursAgo < 24) {
+          label = `Overdue by ${hoursAgo}h`;
+        } else {
+          label = `Overdue by ${Math.round(hoursAgo / 24)}d`;
+        }
+      } else if (diffHours < 1) {
+        label = 'Due in mins!';
+      } else if (diffHours < 24) {
+        label = `Due in ${Math.round(diffHours)}h`;
+      } else {
+        label = `Due in ${Math.round(diffHours / 24)}d`;
+      }
+      return { task: t, label, hoursLeft: diffHours };
+    }).sort((a, b) => a.hoursLeft - b.hoursLeft);
+  }, [tasks]);
+
+  const activeNearingDeadlines = React.useMemo(() => {
+    return nearingDeadlines.filter(item => !dismissedDeadlines.includes(item.task.id));
+  }, [nearingDeadlines, dismissedDeadlines]);
+
+  const handleCompleteTask = async (taskId: string) => {
+    if (!selectedProject) return;
+    try {
+      await updateTask(
+        selectedProject.id,
+        taskId,
+        { status: 'completed' },
+        currentUser?.uid || 'offline',
+        currentUser?.email || 'offline'
+      );
+    } catch (e) {
+      console.error("Failed to update task status from toast click:", e);
+    }
+  };
 
   // 1. Subscribe to User Auth state
   useEffect(() => {
@@ -175,6 +260,11 @@ export default function App() {
         onSelectProject={setSelectedProject}
         onCreateProjectClick={() => setActiveTab('config')}
         onGoogleSignIn={handleGoogleSignInClick}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        nearingDeadlines={nearingDeadlines}
+        onCompleteTask={handleCompleteTask}
+        onNavigateToTab={setActiveTab}
       />
 
       {currentUser ? (
@@ -397,6 +487,66 @@ export default function App() {
               </p>
             </div>
             
+          </div>
+        </div>
+      )}
+
+      {/* Sliding deadline notification toast */}
+      {currentUser && activeNearingDeadlines.length > 0 && showDeadlineToast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-amber-100 border-2 border-black rounded-2xl p-4 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] animate-fade-in text-slate-900 transition-all">
+          <div className="flex items-start justify-between">
+            <div className="flex gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-amber-400 border border-black flex items-center justify-center flex-shrink-0 shadow-[1px_1px_0px_0px_#000] text-black">
+                💡
+              </div>
+              <div className="text-left">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-amber-800 leading-none">Task Deadline Warnings</span>
+                <p className="text-xs font-bold mt-1 text-black">
+                  You have <span className="underline">{activeNearingDeadlines.length}</span> critical deliverable{activeNearingDeadlines.length === 1 ? '' : 's'} nearing its deadline!
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowDeadlineToast(false)}
+              className="text-neutral-500 hover:text-black font-black text-xs px-1.5 py-0.5 rounded border border-transparent hover:border-black transition cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="mt-3.5 space-y-2 max-h-36 overflow-y-auto">
+            {activeNearingDeadlines.slice(0, 3).map((item) => (
+              <div key={item.task.id} className="flex items-center justify-between bg-white border border-black rounded-xl px-2.5 py-1.5 text-xs font-bold leading-none shadow-[1px_1px_0px_0px_rgba(0,0,0,0.15)] text-left gap-1.5">
+                <div className="truncate flex-1">
+                  <span className="block text-[10px] text-zinc-650 truncate">{item.task.title}</span>
+                  <span className="text-[10px] text-red-700 bg-red-100 border border-red-200 px-1 py-0.5 rounded leading-none mt-0.5 inline-block font-black uppercase">{item.label}</span>
+                </div>
+                <button
+                  onClick={() => handleCompleteTask(item.task.id)}
+                  className="bg-black hover:bg-neutral-800 text-white border border-black px-2 py-1 rounded text-[9px] font-black uppercase tracking-wide leading-none transition-all flex-shrink-0 cursor-pointer text-center hover:scale-105 active:scale-95"
+                >
+                  Complete
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3.5 flex justify-between items-center text-[10px]">
+            <button 
+              onClick={() => {
+                setActiveTab('tasks');
+                setShowDeadlineToast(false);
+              }}
+              className="font-black uppercase tracking-wider text-indigo-700 hover:underline cursor-pointer"
+            >
+              Open Kanban Boards →
+            </button>
+            <button 
+              onClick={() => setDismissedDeadlines(prev => [...prev, ...activeNearingDeadlines.map(x => x.task.id)])}
+              className="text-neutral-500 hover:text-black font-extrabold uppercase cursor-pointer"
+            >
+              Mute All Warnings
+            </button>
           </div>
         </div>
       )}
