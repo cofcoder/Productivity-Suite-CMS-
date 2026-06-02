@@ -266,7 +266,7 @@ export function seedInitialData(userId: string, email: string) {
         projectId: 'welcome-workspace',
         senderId: 'system',
         senderEmail: 'assistant@aistudio.com',
-        message: 'Welcome to your Collaborative Productivity Suite! Share this workspace with team members or connect Firebase underneath to sync across devices in real time.',
+        message: 'Welcome to Stratum! Share this workspace with team members or connect Firebase underneath to sync across devices in real time.',
         createdAt: new Date().toISOString()
       }
     ];

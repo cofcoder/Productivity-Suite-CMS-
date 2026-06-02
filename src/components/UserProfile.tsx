@@ -207,7 +207,7 @@ export default function UserProfile({
 
           <div className="space-y-3 font-bold text-xs text-neutral-700 text-left">
             <p className="leading-relaxed font-semibold">
-              The Workspace Productivity CMS stores your content inside dynamic collections. 
+              The Stratum Workspace stores your content inside dynamic collections. 
               Here is what your profile maintains access to:
             </p>
             

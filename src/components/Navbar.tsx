@@ -13,7 +13,6 @@ import {
   HelpCircle, 
   ShieldAlert, 
   FolderLock, 
-  Compass, 
   Sun, 
   Moon, 
   Bell, 
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Project } from '../types';
 import { logoutUser, isFirebaseConfigured } from '../dataService';
+import StratumLogo from './StratumLogo';
 
 interface NavbarProps {
   currentUser: any;
@@ -62,12 +62,10 @@ export default function Navbar({
         
         {/* Left Side: Logo and Brand */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-yellow-300 text-black border-2 border-black shadow-[1.5px_1.5px_0px_0px_#1a1a1a] sm:shadow-[2px_2px_0px_0px_#1a1a1a] transition-transform hover:scale-105 select-none">
-            <Compass className="h-4.5 w-4.5 sm:h-5 sm:w-5 stroke-[2.5]" />
-          </div>
+          <StratumLogo className="h-8 w-8 sm:h-10 sm:w-10 hover:scale-105 transition-transform duration-200" />
           <div className="flex items-center">
             <span className="font-display text-sm sm:text-base md:text-lg font-black uppercase tracking-tight text-slate-900 truncate max-w-[130px] sm:max-w-none">
-              Productivity CMS
+              Stratum
             </span>
             <span className="hidden lg:inline-block ml-2 rounded-lg bg-black border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
               Suite
