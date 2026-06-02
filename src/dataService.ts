@@ -47,6 +47,7 @@ import {
   UserProfile,
   ActiveUserPresence
 } from './types';
+import { getRandomPresetId } from './components/UserAvatar';
 
 // Simple function to generate secure, alphanumeric IDs matching standard path validators
 export function generateId(): string {
@@ -127,11 +128,17 @@ export async function loginWithGoogle(): Promise<{ user: any; error: string | nu
       // Update public user profile
       const user = result.user;
       if (user) {
+        const storedAvatar = localStorage.getItem(`stratum_avatar_${user.uid}`) || getRandomPresetId();
+        if (!localStorage.getItem(`stratum_avatar_${user.uid}`)) {
+          localStorage.setItem(`stratum_avatar_${user.uid}`, storedAvatar);
+        }
+
         const userRef = doc(db, 'users', user.uid, 'public', 'profile');
         await setDoc(userRef, {
           userId: user.uid,
           email: user.email || '',
           displayName: user.displayName || user.email?.split('@')[0] || 'Team Colleague',
+          avatar: storedAvatar,
           updatedAt: serverTimestamp()
         });
       }
@@ -142,8 +149,14 @@ export async function loginWithGoogle(): Promise<{ user: any; error: string | nu
     }
   } else {
     // Offline Mock Authentication
+    const uid = 'offline-developer-shane';
+    const storedAvatar = localStorage.getItem(`stratum_avatar_${uid}`) || getRandomPresetId();
+    if (!localStorage.getItem(`stratum_avatar_${uid}`)) {
+      localStorage.setItem(`stratum_avatar_${uid}`, storedAvatar);
+    }
+
     const localUser = {
-      uid: 'offline-developer-shane',
+      uid: uid,
       email: 'Shane.Geach@gmail.com',
       displayName: 'Shane Geach (Active Dev)',
       emailVerified: true
@@ -164,27 +177,79 @@ export async function logoutUser(): Promise<void> {
   }
 }
 
+// Function to save customizable user avatars with database sync support
+export async function saveUserAvatar(userId: string, avatarData: string): Promise<void> {
+  // Update local storage
+  localStorage.setItem(`stratum_avatar_${userId}`, avatarData);
+
+  // If Firebase is configured, also update public user profile under 'avatar' (or 'photoURL')
+  if (isFirebaseConfigured && db) {
+    try {
+      const userRef = doc(db, 'users', userId, 'public', 'profile');
+      await setDoc(userRef, {
+        avatar: avatarData,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    } catch (e) {
+      console.warn("Could not sync avatar to Firebase Firestore public profile:", e);
+    }
+  }
+  // Notify listeners to update state!
+  notifyMockListeners('_mock_auth_user');
+}
+
 export function subscribeAuth(callback: (user: any) => void): () => void {
   if (isFirebaseConfigured && auth) {
-    return onAuthStateChanged(auth, async (fbUser) => {
-      if (fbUser) {
-        callback({
-          uid: fbUser.uid,
-          email: fbUser.email,
-          displayName: fbUser.displayName || fbUser.email?.split('@')[0],
-          emailVerified: fbUser.emailVerified
-        });
-      } else {
+    let currentFbUser: any = null;
+
+    const updateFbUserAndNotify = () => {
+      if (!currentFbUser) {
         callback(null);
+        return;
       }
+      const storedAvatar = localStorage.getItem(`stratum_avatar_${currentFbUser.uid}`) || getRandomPresetId();
+      callback({
+        uid: currentFbUser.uid,
+        email: currentFbUser.email,
+        displayName: currentFbUser.displayName || currentFbUser.email?.split('@')[0],
+        emailVerified: currentFbUser.emailVerified,
+        avatar: storedAvatar
+      });
+    };
+
+    const unsubAuth = onAuthStateChanged(auth, (fbUser) => {
+      currentFbUser = fbUser;
+      if (fbUser) {
+        const storedAvatar = localStorage.getItem(`stratum_avatar_${fbUser.uid}`) || getRandomPresetId();
+        if (!localStorage.getItem(`stratum_avatar_${fbUser.uid}`)) {
+          localStorage.setItem(`stratum_avatar_${fbUser.uid}`, storedAvatar);
+        }
+      }
+      updateFbUserAndNotify();
     });
+
+    const unsubLocal = registerMockListener('_mock_auth_user', () => {
+      updateFbUserAndNotify();
+    });
+
+    return () => {
+      unsubAuth();
+      unsubLocal();
+    };
   } else {
     const check = () => {
       const stored = localStorage.getItem('_mock_auth_user');
       if (stored) {
         const parsed = JSON.parse(stored);
+        const storedAvatar = localStorage.getItem(`stratum_avatar_${parsed.uid}`) || getRandomPresetId();
+        if (!localStorage.getItem(`stratum_avatar_${parsed.uid}`)) {
+          localStorage.setItem(`stratum_avatar_${parsed.uid}`, storedAvatar);
+        }
         seedInitialData(parsed.uid, parsed.email);
-        callback(parsed);
+        callback({
+          ...parsed,
+          avatar: storedAvatar
+        });
       } else {
         callback(null);
       }
@@ -766,6 +831,7 @@ export async function sendChatMessage(
 ): Promise<void> {
   const chatId = generateId();
   const currentTimestamp = isFirebaseConfigured ? serverTimestamp() : new Date().toISOString();
+  const senderAvatar = localStorage.getItem(`stratum_avatar_${senderId}`) || null;
 
   const chatDoc: ChatMessage = {
     id: chatId,
@@ -773,6 +839,7 @@ export async function sendChatMessage(
     senderId,
     senderEmail,
     message,
+    senderAvatar,
     createdAt: currentTimestamp
   };
 

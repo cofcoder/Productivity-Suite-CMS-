@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { ChatMessage, ProjectActivity, Project } from '../types';
 import { sendChatMessage } from '../dataService';
+import UserAvatar from './UserAvatar';
 
 interface ChatCollaborationProps {
   currentUser: any;
@@ -113,12 +114,13 @@ export default function ChatCollaboration({
                 key={chat.id} 
                 className={`flex gap-3 max-w-lg ${isMe ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
               >
-                {/* User initials circle */}
-                <div className={`h-8 w-8 rounded-xl flex items-center justify-center font-black text-xs uppercase border-2 border-black flex-shrink-0 ${
-                  isMe ? 'bg-black text-white' : 'bg-emerald-300 text-black shadow-[1.5px_1.5px_0px_0px_#000]'
-                }`}>
-                  {initials}
-                </div>
+                {/* User Avatar Representation */}
+                <UserAvatar 
+                  avatar={chat.senderAvatar || (isMe ? currentUser?.avatar : null)} 
+                  displayName={chat.senderEmail?.split('@')[0]} 
+                  className="h-8 w-8 shadow-[1.5px_1.5px_0px_0px_#000]"
+                  iconSizeClass="text-[0.95rem]"
+                />
 
                 {/* Bubble details */}
                 <div className="space-y-1 text-left">

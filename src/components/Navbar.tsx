@@ -23,6 +23,7 @@ import {
 import { Project } from '../types';
 import { logoutUser, isFirebaseConfigured } from '../dataService';
 import StratumLogo from './StratumLogo';
+import UserAvatar from './UserAvatar';
 
 interface NavbarProps {
   currentUser: any;
@@ -268,7 +269,20 @@ export default function Navbar({
             )}
 
             {currentUser ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab?.('profile')}
+                  title="View Profile Customizer"
+                  className="hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+                >
+                  <UserAvatar 
+                    avatar={currentUser.avatar} 
+                    displayName={currentUser.displayName} 
+                    className="h-9 w-9 shadow-[1.5px_1.5px_0px_0px_#1a1a1a] hover:border-amber-400"
+                    iconSizeClass="text-[1.15rem]" 
+                  />
+                </button>
                 <div className="flex flex-col items-end">
                   <span className="text-xs font-black uppercase text-slate-900 truncate max-w-[130px] lg:max-w-[170px]">
                     {currentUser.displayName}

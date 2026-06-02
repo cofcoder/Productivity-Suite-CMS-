@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, Project } from '../types';
 import { addTask, updateTask, deleteTaskItem } from '../dataService';
+import UserAvatar from './UserAvatar';
 
 interface KanbanBoardProps {
   currentUser: any;
@@ -319,12 +320,21 @@ export default function KanbanBoard({
 
                       {/* Task assignee initials */}
                       {task.assignedEmail ? (
-                        <div 
-                          title={`Assigned to ${task.assignedEmail}`}
-                          className="flex h-5.5 w-5.5 items-center justify-center rounded-lg bg-orange-300 border-2 border-black text-black font-black uppercase text-[9px] shadow-[1px_1px_0px_0px_#000] ml-auto"
-                        >
-                          {task.assignedEmail.charAt(0)}
-                        </div>
+                        task.assignedEmail === currentUser?.email ? (
+                          <UserAvatar 
+                            avatar={currentUser?.avatar} 
+                            displayName={currentUser?.displayName} 
+                            className="h-5.5 w-5.5 rounded-lg border-2 shadow-[1px_1px_0px_0px_#000] ml-auto"
+                            iconSizeClass="text-[0.6rem]"
+                          />
+                        ) : (
+                          <div 
+                            title={`Assigned to ${task.assignedEmail}`}
+                            className="flex h-5.5 w-5.5 items-center justify-center rounded-lg bg-orange-300 border-2 border-black text-black font-black uppercase text-[9px] shadow-[1px_1px_0px_0px_#000] ml-auto"
+                          >
+                            {task.assignedEmail.charAt(0)}
+                          </div>
+                        )
                       ) : (
                         <div title="Unassigned Task" className="flex h-5.5 w-5.5 items-center justify-center rounded-lg bg-white border-2 border-black text-neutral-600 ml-auto">
                           <User className="h-3 w-3" />

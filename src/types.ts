@@ -82,6 +82,7 @@ export interface ChatMessage {
   senderId: string;
   senderEmail: string;
   message: string;
+  senderAvatar?: string | null;
   createdAt: any; // Timestamp
 }
 
