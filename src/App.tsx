@@ -15,7 +15,8 @@ import {
   BookOpen, 
   CloudRain, 
   FolderLock,
-  ArrowRight
+  ArrowRight,
+  User
 } from 'lucide-react';
 import { 
   Project, 
@@ -44,6 +45,7 @@ import KanbanBoard from './components/KanbanBoard';
 import TimeBlocking from './components/TimeBlocking';
 import GoalTracking from './components/GoalTracking';
 import ChatCollaboration from './components/ChatCollaboration';
+import UserProfile from './components/UserProfile';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -149,7 +151,8 @@ export default function App() {
     { id: 'tasks', label: 'Kanban Tasks', icon: CheckSquare },
     { id: 'schedule', label: 'Time Blocking', icon: Calendar },
     { id: 'goals', label: 'Milestone Goals', icon: Target },
-    { id: 'chat', label: 'Discussions Chnl', icon: MessageSquare }
+    { id: 'chat', label: 'Discussions Chnl', icon: MessageSquare },
+    { id: 'profile', label: 'User Profile', icon: User }
   ];
 
   if (authChecking) {
@@ -193,7 +196,7 @@ export default function App() {
                     <button
                       key={tab.id}
                       onClick={() => {
-                        if (selectedProject) {
+                        if (selectedProject || tab.id === 'profile') {
                           setActiveTab(tab.id);
                         } else {
                           setActiveTab('config');
@@ -227,7 +230,7 @@ export default function App() {
             <main className="lg:col-span-3 space-y-6">
               
               {/* If no project is active, redirect them to create workspace form */}
-              {!selectedProject && activeTab !== 'config' ? (
+              {!selectedProject && activeTab !== 'config' && activeTab !== 'profile' ? (
                 <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center max-w-lg mx-auto flex flex-col items-center justify-center space-y-4 shadow-sm mt-8">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
                     <Layers className="h-6 w-6" />
@@ -287,6 +290,14 @@ export default function App() {
                       project={selectedProject!}
                       chats={chats}
                       activities={activities}
+                    />
+                  )}
+
+                  {activeTab === 'profile' && (
+                    <UserProfile 
+                      currentUser={currentUser}
+                      onRefreshData={handleRefreshData}
+                      onNavigateToTab={setActiveTab}
                     />
                   )}
                   

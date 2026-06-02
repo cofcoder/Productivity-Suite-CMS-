@@ -167,6 +167,8 @@ service cloud.firestore {
           && incoming().updatedAt == request.time
           && incoming().email == existing().email
           && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'updatedAt']);
+
+        allow delete: if isVerifiedUser() && request.auth.uid == userId;
       }
 
       match /private/info {

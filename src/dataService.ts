@@ -854,3 +854,146 @@ export async function logActivity(
     saveLocalArray('_local_cms_activities', activities);
   }
 }
+
+// ==========================================
+// 8. USER DATA & PROFILE PURGING SERVICES
+// ==========================================
+
+export async function deleteUserData(userId: string, email: string): Promise<void> {
+  if (isFirebaseConfigured && db) {
+    try {
+      // 1. Fetch all projects where ownerId == userId
+      const ownerQuery = query(collection(db, 'projects'), where('ownerId', '==', userId));
+      const ownedProjectsSnap = await getDocs(ownerQuery);
+      
+      for (const projDoc of ownedProjectsSnap.docs) {
+        const projectId = projDoc.id;
+        
+        // Delete tasks subcollection
+        const tasksSnap = await getDocs(collection(db, 'projects', projectId, 'tasks'));
+        for (const d of tasksSnap.docs) {
+          await deleteDoc(doc(db, 'projects', projectId, 'tasks', d.id));
+        }
+        
+        // Delete timeBlocks subcollection
+        const blocksSnap = await getDocs(collection(db, 'projects', projectId, 'timeBlocks'));
+        for (const d of blocksSnap.docs) {
+          await deleteDoc(doc(db, 'projects', projectId, 'timeBlocks', d.id));
+        }
+        
+        // Delete goals subcollection
+        const goalsSnap = await getDocs(collection(db, 'projects', projectId, 'goals'));
+        for (const d of goalsSnap.docs) {
+          await deleteDoc(doc(db, 'projects', projectId, 'goals', d.id));
+        }
+        
+        // Delete chats subcollection
+        const chatsSnap = await getDocs(collection(db, 'projects', projectId, 'chats'));
+        for (const d of chatsSnap.docs) {
+          await deleteDoc(doc(db, 'projects', projectId, 'chats', d.id));
+        }
+        
+        // Note: activities subcollection cannot be deleted due to allow delete rules (only admins).
+        // Since the parent project document deletion will orphan it, they will still become completely inaccessible.
+        
+        // Delete project itself
+        await deleteDoc(doc(db, 'projects', projectId));
+      }
+      
+      // 2. Remove user from shared project memberships (projects where they are members but NOT owner)
+      const memberQuery = query(collection(db, 'projects'), where('members', 'array-contains', userId));
+      const memberProjectsSnap = await getDocs(memberQuery);
+      
+      for (const projDoc of memberProjectsSnap.docs) {
+        const projData = projDoc.data() as Project;
+        if (projData.ownerId !== userId) {
+          const updatedMembers = projData.members.filter(m => m !== userId);
+          const updatedEmails = projData.memberEmails.filter(e => e.toLowerCase() !== email.toLowerCase());
+          
+          await updateDoc(doc(db, 'projects', projDoc.id), {
+            members: updatedMembers,
+            memberEmails: updatedEmails,
+          });
+        }
+      }
+      
+      // 3. Delete user public profile document
+      try {
+        await deleteDoc(doc(db, 'users', userId, 'public', 'profile'));
+      } catch (e) {
+        console.warn("Could not delete public profile document:", e);
+      }
+      
+      // 4. Delete user private info document if exists
+      try {
+        await deleteDoc(doc(db, 'users', userId, 'private', 'info'));
+      } catch (e) {
+        console.warn("Could not delete private info document:", e);
+      }
+      
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `users/${userId}`);
+    }
+  } else {
+    // Offline mode: wipe arrays of any project owned by client or membership tags
+    const projects = getLocalArray<Project>('_local_cms_projects');
+    const ownedProjectIds = projects.filter(p => p.ownerId === userId).map(p => p.id);
+    
+    // Remaining projects (where user is not a member)
+    const remainingProjects = projects.filter(p => !p.members.includes(userId));
+    
+    // Joint projects (remove user from team membership, retaining project for other members)
+    const sharedProjects = projects.filter(p => p.members.includes(userId) && p.ownerId !== userId);
+    for (const p of sharedProjects) {
+      p.members = p.members.filter(m => m !== userId);
+      p.memberEmails = p.memberEmails.filter(e => e.toLowerCase() !== email.toLowerCase());
+      remainingProjects.push(p);
+    }
+    
+    saveLocalArray('_local_cms_projects', remainingProjects);
+    
+    // Clean associated tasks, timeblocks, goals, chats, activities
+    const tasks = getLocalArray<Task>('_local_cms_tasks');
+    const remainingTasks = tasks.filter(t => !ownedProjectIds.includes(t.projectId));
+    saveLocalArray('_local_cms_tasks', remainingTasks);
+    
+    const blocks = getLocalArray<TimeBlock>('_local_cms_blocks');
+    const remainingBlocks = blocks.filter(b => !ownedProjectIds.includes(b.projectId));
+    saveLocalArray('_local_cms_blocks', remainingBlocks);
+    
+    const goals = getLocalArray<Goal>('_local_cms_goals');
+    const remainingGoals = goals.filter(g => !ownedProjectIds.includes(g.projectId));
+    saveLocalArray('_local_cms_goals', remainingGoals);
+    
+    const chats = getLocalArray<ChatMessage>('_local_cms_chats');
+    const remainingChats = chats.filter(c => !ownedProjectIds.includes(c.projectId));
+    saveLocalArray('_local_cms_chats', remainingChats);
+    
+    const activities = getLocalArray<ProjectActivity>('_local_cms_activities');
+    const remainingActivities = activities.filter(a => !ownedProjectIds.includes(a.projectId));
+    saveLocalArray('_local_cms_activities', remainingActivities);
+  }
+}
+
+export async function deleteUserAccount(): Promise<void> {
+  if (isFirebaseConfigured && auth && auth.currentUser) {
+    const user = auth.currentUser;
+    const userId = user.uid;
+    const email = user.email || '';
+    
+    // Delete data first
+    await deleteUserData(userId, email);
+    
+    // Delete account from Firebase Auth
+    await user.delete();
+  } else {
+    const mockAuthUser = localStorage.getItem('_mock_auth_user');
+    if (mockAuthUser) {
+      const parsed = JSON.parse(mockAuthUser);
+      await deleteUserData(parsed.uid, parsed.email);
+    }
+    localStorage.removeItem('_mock_auth_user');
+    notifyMockListeners('_mock_auth_user');
+  }
+}
+
